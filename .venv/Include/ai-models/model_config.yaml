@@ -1,0 +1,52 @@
+# Default configuration for the credit scoring model
+target_column: credit_score
+
+# Model parameters
+model_params:
+  n_estimators: 100
+  max_depth: 10
+  random_state: 42
+  class_weight: balanced
+  n_jobs: -1
+
+# Feature engineering settings
+feature_engineering:
+  combine_features: true
+  drop_constant: true
+  encode_categorical: true
+  rare_label_threshold: 0.01
+  
+  # Feature combinations to try
+  numerical_combinations:
+    - operations: ['sum', 'prod', 'diff', 'ratio']
+      max_features: 5
+    
+  # Categorical encoding settings
+  categorical_encoding:
+    max_categories: 10
+    handle_unknown: 'ignore'
+    
+  # Feature selection
+  feature_selection:
+    method: 'correlation'
+    threshold: 0.95
+
+# Training parameters
+training:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+  
+  # Early stopping
+  early_stopping:
+    patience: 5
+    min_delta: 0.001
+    
+  # Class balancing
+  balance_method: 'class_weight'  # Options: 'class_weight', 'smote', 'none'
+
+# Model monitoring
+monitoring:
+  performance_threshold: 0.75
+  drift_detection: true
+  retraining_frequency: 24  # hours
