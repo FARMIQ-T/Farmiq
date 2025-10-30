@@ -23,8 +23,13 @@ swagger(app);
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Import routes
+const ussdRoutes = require("./routes/ussd");
+const mpesaRoutes = require("./routes/routes");
+
 // API Routes
-app.use("/", routes);
+app.use("/", mpesaRoutes); // M-Pesa routes
+app.use("/", ussdRoutes); // USSD and SMS routes
 
 
 
