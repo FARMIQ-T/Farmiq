@@ -3,6 +3,43 @@ import os
 import importlib.util
 import sys
 import traceback
+from dotenv import load_dotenv
+from supabase import create_client, Client
+import pandas as pd
+from datetime import datetime
+from services.database_service import DatabaseService
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Supabase client and database service
+def init_services():
+    """Initialize Supabase client and database service with caching using Streamlit session state"""
+    if 'supabase' not in st.session_state or 'db_service' not in st.session_state:
+        url = os.getenv('SUPABASE_URL')
+        key = os.getenv('SUPABASE_KEY')
+        if not url or not key:
+            st.error("Missing Supabase credentials. Please check .env file")
+            st.stop()
+        
+        st.session_state.supabase = create_client(url, key)
+        st.session_state.db_service = DatabaseService(url, key)
+    
+    return st.session_state.supabase, st.session_state.db_service
+
+def get_or_create_anonymous_user():
+    """Get existing anonymous session or create new one"""
+    supabase, _ = init_services()
+    
+    if 'anon_user' not in st.session_state:
+        try:
+            response = supabase.auth.sign_in_anonymously()
+            st.session_state.anon_user = response.user
+        except Exception as e:
+            st.error(f"Error creating anonymous session: {str(e)}")
+            return None
+    
+    return st.session_state.anon_user
 
 
 # --- PAGE SETUP ---
@@ -16,6 +53,19 @@ if os.path.exists(logo_path):
     st.sidebar.image(logo_path, width="stretch")  # Updated to use new width parameter
 
 st.sidebar.title("🌽👩‍🌾 Farm IQ Dashboard")
+
+# Initialize services
+if 'supabase' not in st.session_state or 'db_service' not in st.session_state:
+    init_services()
+
+# Ensure anonymous user session
+user = get_or_create_anonymous_user()
+if not user:
+    st.error("Failed to initialize user session")
+    st.stop()
+
+# Display user session info in sidebar
+st.sidebar.success(f"Session ID: {user.id[:8]}...")
 
 # --- NAVIGATION SETUP [WITH SECTIONS] ---
 # Define each page as a tuple: (relative_module_path, title, icon)
@@ -59,6 +109,10 @@ module_rel_path, page_title, page_icon = pages[section][page_name]
 st.sidebar.markdown("Made with Precision")
 
 st.title(page_title)
+
+# Ensure services are available in session state for other modules
+if 'supabase' not in st.session_state or 'db_service' not in st.session_state:
+    init_services()
 
 # Build absolute path to the selected page and execute it.
 module_path = os.path.join(current_dir, module_rel_path)
